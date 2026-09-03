@@ -69,3 +69,7 @@
 - **Done:** Updated the reports reader to try the local API, a static project path, and the GitHub-hosted Markdown file so the research paper can render in local and deployed environments.
 - **Decisions:** The `reports/` directory had been excluded from Git, which left the deployed site without `research_paper.md`. The report is now intentionally included in version control for the dashboard to access.
 - **Status:** Ready to publish with the report-loader update.
+
+## 2026-09-03 — Navigation Simplification
+- **Done:** Removed the Reports & Research item from the dashboard sidebar.
+- **Decisions:** The report view remains in the codebase but is no longer exposed through primary navigation.
