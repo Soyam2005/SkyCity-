@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5A6ACF" />
+      <stop offset="100%" stop-color="#8B5CF6" />
+    </linearGradient>
+    <filter id="cardShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#5A6ACF" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Rounded Brand Container -->
+  <rect x="50" y="40" width="300" height="300" rx="64" fill="url(#brandGradient)" filter="url(#cardShadow)"/>
+  
+  <!-- Fork Element (Left) -->
+  <path d="M 105 130 C 105 120 125 120 125 130 L 125 180 C 125 195 140 195 140 210 L 140 270 C 140 278 130 278 130 270 L 130 215 C 130 205 115 205 115 180 L 115 130 Z" fill="#FFFFFF"/>
+  <rect x="110" y="125" width="4" height="35" rx="2" fill="url(#brandGradient)"/>
+  <rect x="120" y="125" width="4" height="35" rx="2" fill="url(#brandGradient)"/>
+  
+  <!-- Ascending Analytics Bars (Right) -->
+  <rect x="160" y="210" width="22" height="60" rx="6" fill="#FFFFFF"/>
+  <rect x="195" y="180" width="22" height="90" rx="6" fill="#FFFFFF"/>
+  <rect x="230" y="150" width="22" height="120" rx="6" fill="#FFFFFF"/>
+  <rect x="265" y="120" width="22" height="150" rx="6" fill="#FFFFFF"/>
+  
+  <!-- Dynamic Growth Trend Line -->
+  <polyline points="120,220 170,175 210,195 275,115" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Star / Compass Accent -->
+  <polygon points="275,100 282,112 295,115 282,118 275,130 268,118 255,115 268,112" fill="#FFFFFF"/>
+</svg>

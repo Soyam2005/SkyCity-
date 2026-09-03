@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyCity DineMetrics | Order Channel Performance Benchmark</title>
+  <meta name="description" content="Order Channel Performance Benchmark & Profit Optimization Analytics for Auckland Restaurants & Bars.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <!-- Chart.js & Zoom Plugin CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- 1. Left Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <img src="assets/logo.svg" alt="SkyCity DineMetrics Logo" class="brand-logo-img">
+        <div class="brand-info">
+          <h1>SkyCity DineMetrics</h1>
+          <p>Auckland Benchmark</p>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section-title">Overview</div>
+        <a class="nav-item active" data-tab="tab-overview">
+          <span class="nav-item-icon">📊</span>
+          <span>Market Overview</span>
+        </a>
+        <a class="nav-item" data-tab="tab-distance">
+          <span class="nav-item-icon">📍</span>
+          <span>Distance & Radius</span>
+        </a>
+        <a class="nav-item" data-tab="tab-cuisines">
+          <span class="nav-item-icon">🍜</span>
+          <span>Cuisine Mix</span>
+        </a>
+        <a class="nav-item" data-tab="tab-segments">
+          <span class="nav-item-icon">🏢</span>
+          <span>Segment Reliance</span>
+        </a>
+        <a class="nav-item" data-tab="tab-comparison">
+          <span class="nav-item-icon">⚖️</span>
+          <span>Subregion Comparison</span>
+        </a>
+        <a class="nav-item" data-tab="tab-risk">
+          <span class="nav-item-icon">⚠️</span>
+          <span>Risk Assessment</span>
+        </a>
+
+        <div class="nav-section-title">Optimization</div>
+        <a class="nav-item" data-tab="tab-simulator">
+          <span class="nav-item-icon">🧮</span>
+          <span>Profit Simulator</span>
+        </a>
+      </div>
+
+      <!-- Sidebar Filters -->
+      <div class="sidebar-filters">
+        <div class="nav-section-title" style="padding-left:0; padding-top:0;">Global Filters</div>
+        <div class="filter-group">
+          <label class="filter-label" for="subregionSelect">Subregion</label>
+          <select id="subregionSelect" class="custom-select"></select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="cuisineSelect">Cuisine</label>
+          <select id="cuisineSelect" class="custom-select"></select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="segmentSelect">Segment</label>
+          <select id="segmentSelect" class="custom-select"></select>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. Main Content Wrapper -->
+    <main class="app-main">
+      
+      <!-- Top Sticky Navbar -->
+      <header class="app-navbar">
+        <div class="navbar-left">
+          <span class="navbar-title">SkyCity DineMetrics</span>
+          <span class="navbar-badge">
+            <span class="dot-pulse"></span>
+            <span id="filterBadge">1,696 Active Branches</span>
+          </span>
+        </div>
+        <div class="navbar-right">
+          <!-- Dark Mode Toggle Button -->
+          <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light/Dark Theme">🌙</button>
+          
+          <div class="user-profile-badge">
+            <div class="user-avatar">SD</div>
+            <span>Auckland Metro</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Body Container -->
+      <div class="content-body">
+        
+        <!-- Signature Metric Hierarchy (1 Gradient Hero Card + 3 Flat Data Cards) -->
+        <section class="metric-grid">
+          <!-- 1. Gradient Hero Card -->
+          <div class="hero-card">
+            <div class="hero-header">
+              <span class="hero-label">Total Net Profit</span>
+              <div class="hero-action-btn">↗</div>
+            </div>
+            <div id="metricHeroProfit" class="hero-value">$7,866,306</div>
+            <div id="metricHeroMargin" class="hero-sublabel">10.1% Avg Profit Margin Across Network</div>
+          </div>
+
+          <!-- 2. Flat Data Card: Monthly Orders -->
+          <div class="flat-card">
+            <div class="flat-header">
+              <div class="category-icon icon-indigo">📦</div>
+              <span class="trend-badge trend-green">↑ 100% Verified</span>
+            </div>
+            <div id="metricOrders" class="flat-value">2,019,134</div>
+            <div class="flat-label">Total Monthly Orders</div>
+          </div>
+
+          <!-- 3. Flat Data Card: Gross Revenue -->
+          <div class="flat-card">
+            <div class="flat-header">
+              <div class="category-icon icon-amber">💳</div>
+              <span class="trend-badge trend-green">Avg AOV $38.52</span>
+            </div>
+            <div id="metricRevenue" class="flat-value">$77,739,307</div>
+            <div class="flat-label">Gross Monthly Revenue</div>
+          </div>
+
+          <!-- 4. Flat Data Card: High-Risk Branches -->
+          <div class="flat-card">
+            <div class="flat-header">
+              <div class="category-icon icon-red">⚠️</div>
+              <span id="metricRiskBadge" class="trend-badge trend-red">35.6% Ratio</span>
+            </div>
+            <div id="metricRisk" class="flat-value">603</div>
+            <div class="flat-label">High-Risk Aggregator Branches (≥70%)</div>
+          </div>
+        </section>
+
+        <!-- TAB 1: Market Overview -->
+        <section id="tab-overview" class="tab-content active">
+          <div class="dashboard-row">
+            <div class="surface-card">
+              <div class="card-header-bar">
+                <div>
+                  <h3 class="card-title">Channel Market Share</h3>
+                  <p class="card-subtitle">Volume breakdown across 4 ordering channels</p>
+                </div>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="channelDonutChart"></canvas>
+              </div>
+            </div>
+
+            <div class="surface-card">
+              <div class="card-header-bar">
+                <div>
+                  <h3 class="card-title">Channel Economics & Unit Margins</h3>
+                  <p class="card-subtitle">Order Share vs Revenue Share vs Net Profit Margin</p>
+                </div>
+              </div>
+              <div style="height: 280px; position: relative;">
+                <canvas id="economicsBarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Channel Performance Table -->
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">Channel Performance Matrix</h3>
+                <p class="card-subtitle">Detailed financial breakdown and profit-per-order economics</p>
+              </div>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Channel</th>
+                    <th>Orders</th>
+                    <th>Order Share</th>
+                    <th>Revenue ($)</th>
+                    <th>Revenue Share</th>
+                    <th>Net Profit ($)</th>
+                    <th>Margin (%)</th>
+                    <th>Profit / Order</th>
+                  </tr>
+                </thead>
+                <tbody id="channelsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: Distance & Radius Analysis -->
+        <section id="tab-distance" class="tab-content">
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">📍 Delivery Radius (KM) vs Self-Delivery Profit Per Order</h3>
+                <p class="card-subtitle">Evaluating distance scaling, cost per ticket ($0.89 - $5.31), and margin efficiency</p>
+              </div>
+              <div class="chart-header-actions">
+                <span class="zoom-hint-badge">🔍 Mouse Wheel / Drag to Zoom & Pan</span>
+                <button class="btn-reset-zoom" onclick="window.DineCharts.resetZoom('radiusScatterChart')">⟲ Reset Zoom</button>
+              </div>
+            </div>
+            <div style="height: 380px; position: relative;">
+              <canvas id="radiusScatterChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: Cuisine Mix -->
+        <section id="tab-cuisines" class="tab-content">
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">🍜 Channel Share Across 8 Cuisine Types</h3>
+                <p class="card-subtitle">Stacked distribution across Burgers, Pizza, Thai, Japanese, etc.</p>
+              </div>
+            </div>
+            <div style="height: 380px; position: relative;">
+              <canvas id="cuisineMixChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: Segment Reliance -->
+        <section id="tab-segments" class="tab-content">
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">🏢 Channel Reliance by Business Operational Segment</h3>
+                <p class="card-subtitle">Comparative channel split across Cafe, Full-service, Ghost Kitchen, and QSR</p>
+              </div>
+            </div>
+            <div style="height: 380px; position: relative;">
+              <canvas id="segmentBarChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: Side-by-Side Subregion Comparison Tool -->
+        <section id="tab-comparison" class="tab-content">
+          <!-- Selectors -->
+          <div class="comparison-controls">
+            <div>
+              <label class="filter-label" for="compASelect">Subregion A (Left)</label>
+              <select id="compASelect" class="custom-select"></select>
+            </div>
+            <div class="comparison-vs-badge">VS</div>
+            <div>
+              <label class="filter-label" for="compBSelect">Subregion B (Right)</label>
+              <select id="compBSelect" class="custom-select"></select>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div class="comparison-grid">
+            <!-- Region A Card -->
+            <div class="comparison-card">
+              <div class="comparison-header">
+                <span id="compATitle">CBD</span>
+                <span class="trend-badge trend-green">Region A</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Monthly Orders</span>
+                <span id="compAOrders" class="comp-metric-val">0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Gross Revenue</span>
+                <span id="compARevenue" class="comp-metric-val">$0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Total Net Profit</span>
+                <span id="compAProfit" class="comp-metric-val" style="color:var(--brand-indigo);">$0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Avg Profit Margin</span>
+                <span id="compAMargin" class="comp-metric-val">0%</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">High-Risk Branches (≥70%)</span>
+                <span id="compARisk" class="comp-metric-val">0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Avg Delivery Radius</span>
+                <span id="compARadius" class="comp-metric-val">0 km</span>
+              </div>
+            </div>
+
+            <!-- Region B Card -->
+            <div class="comparison-card">
+              <div class="comparison-header">
+                <span id="compBTitle">South Auckland</span>
+                <span class="trend-badge trend-amber">Region B</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Monthly Orders</span>
+                <span id="compBOrders" class="comp-metric-val">0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Gross Revenue</span>
+                <span id="compBRevenue" class="comp-metric-val">$0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Total Net Profit</span>
+                <span id="compBProfit" class="comp-metric-val" style="color:var(--brand-violet);">$0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Avg Profit Margin</span>
+                <span id="compBMargin" class="comp-metric-val">0%</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">High-Risk Branches (≥70%)</span>
+                <span id="compBRisk" class="comp-metric-val">0</span>
+              </div>
+              <div class="comp-metric-row">
+                <span class="comp-metric-label">Avg Delivery Radius</span>
+                <span id="compBRadius" class="comp-metric-val">0 km</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Chart -->
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">⚖️ Channel Order Share Comparison (%)</h3>
+                <p class="card-subtitle">Channel reliance comparison between both selected subregions</p>
+              </div>
+            </div>
+            <div style="height: 300px; position: relative;">
+              <canvas id="comparisonChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 6: Risk Assessment -->
+        <section id="tab-risk" class="tab-content">
+          <div class="surface-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">⚠️ High-Risk Branch Register (Aggregator Reliance ≥ 70%)</h3>
+                <p class="card-subtitle">Branches critically exposed to platform commission fee increases</p>
+              </div>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Restaurant Name</th>
+                    <th>Subregion</th>
+                    <th>Cuisine</th>
+                    <th>Segment</th>
+                    <th>Aggregator Dep.</th>
+                    <th>In-Store Share</th>
+                    <th>Diversification</th>
+                    <th>Net Margin</th>
+                  </tr>
+                </thead>
+                <tbody id="riskTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 7: Profit Simulator -->
+        <section id="tab-simulator" class="tab-content">
+          <div class="surface-card" style="margin-bottom: 24px;">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">🧮 What-If Channel Migration Simulator</h3>
+                <p class="card-subtitle">Simulate shifting delivery order volume to direct channels and eliminate 30% commission loss</p>
+              </div>
+            </div>
+
+            <!-- Controls Grid -->
+            <div class="sim-controls-grid">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Shift % from Uber Eats:</span>
+                  <span id="ueSliderVal" class="slider-value-pill">15%</span>
+                </div>
+                <input type="range" id="ueSlider" min="0" max="50" value="15" step="5">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Shift % from DoorDash:</span>
+                  <span id="ddSliderVal" class="slider-value-pill">15%</span>
+                </div>
+                <input type="range" id="ddSlider" min="0" max="50" value="15" step="5">
+              </div>
+
+              <div class="slider-group">
+                <label class="filter-label" style="margin-bottom:2px;" for="targetChannelSelect">Destination Channel:</label>
+                <select id="targetChannelSelect" class="custom-select">
+                  <option value="Self-Delivery">Self-Delivery (Direct Online)</option>
+                  <option value="In-Store">In-Store Dining</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Live ROI Cards -->
+            <div class="metric-grid" style="grid-template-columns: repeat(5, 1fr);">
+              <div class="flat-card" style="padding: 14px 16px;">
+                <div class="flat-label">Current Profit</div>
+                <div id="simCurrentProfit" class="flat-value" style="font-size:20px;">$7,866,306</div>
+              </div>
+              <div class="flat-card" style="padding: 14px 16px;">
+                <div class="flat-label">Simulated Profit</div>
+                <div id="simNewProfit" class="flat-value" style="font-size:20px; color:#12B76A;">$8,866,306</div>
+              </div>
+              <div class="flat-card" style="padding: 14px 16px;">
+                <div class="flat-label">Profit Boost</div>
+                <div id="simGainPct" class="flat-value" style="font-size:20px; color:#5A6ACF;">+12.7%</div>
+              </div>
+              <div class="flat-card" style="padding: 14px 16px;">
+                <div class="flat-label">Commissions Saved</div>
+                <div id="simCommSaved" class="flat-value" style="font-size:20px;">$1,428,000</div>
+              </div>
+              <div class="flat-card" style="padding: 14px 16px;">
+                <div class="flat-label">New Margin</div>
+                <div id="simMargin" class="flat-value" style="font-size:20px;">11.4%</div>
+              </div>
+            </div>
+
+            <div style="height: 260px; position: relative; margin-top: 16px;">
+              <canvas id="simulatorChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/simulator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
