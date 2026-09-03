@@ -1,6 +1,6 @@
 /**
- * Chart rendering library for SkyCity DineMetrics
- * Built per Admin Dashboard UI Design System standards with Dark Mode support.
+ * Chart & Matrix Heatmap rendering library for SkyCity DineMetrics
+ * Built per Admin Dashboard UI Design System standards with Dark Mode & Dynamic Filters.
  */
 
 window.DineCharts = {
@@ -149,7 +149,7 @@ window.DineCharts = {
     });
   },
 
-  // 3. Cuisine Mix Stacked Bar
+  // 3. Dynamic Cuisine Mix Stacked Bar
   renderCuisineMix(canvasId, cuisineMatrix) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);
@@ -196,7 +196,14 @@ window.DineCharts = {
             align: 'end',
             labels: { font: { family: 'Inter', size: 11 }, color: theme.textSecondary, usePointStyle: true }
           },
-          tooltip: { backgroundColor: theme.tooltipBg, padding: 10, cornerRadius: 8 }
+          tooltip: {
+            backgroundColor: theme.tooltipBg,
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label: (item) => ` ${item.dataset.label}: ${item.raw.toFixed(1)}%`
+            }
+          }
         }
       }
     });
@@ -283,7 +290,7 @@ window.DineCharts = {
     });
   },
 
-  // 5. Segment Mix Grouped Bar
+  // 5. Dynamic Segment Mix Grouped Bar
   renderSegmentBar(canvasId, segmentMatrix) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);
@@ -327,13 +334,78 @@ window.DineCharts = {
             align: 'end',
             labels: { font: { family: 'Inter', size: 11 }, color: theme.textSecondary, usePointStyle: true }
           },
-          tooltip: { backgroundColor: theme.tooltipBg, padding: 10, cornerRadius: 8 }
+          tooltip: {
+            backgroundColor: theme.tooltipBg,
+            padding: 10,
+            cornerRadius: 8,
+            callbacks: {
+              label: (item) => ` ${item.dataset.label}: ${item.raw.toFixed(1)}%`
+            }
+          }
         }
       }
     });
   },
 
-  // 6. Side-by-Side Subregion Comparison Chart
+  // 6. Subregion vs Channel Matrix Heatmap
+  renderSubregionHeatmapTable(containerId, subregionMatrix, rawCountsMatrix) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const subregions = ['CBD', 'North Shore', 'South Auckland', 'West Auckland'];
+    const channels = ['In-Store', 'Uber Eats', 'DoorDash', 'Self-Delivery'];
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    let html = `
+      <div class="heatmap-table-container">
+        <table class="heatmap-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Subregion</th>
+              <th>In-Store</th>
+              <th>Uber Eats</th>
+              <th>DoorDash</th>
+              <th>Self-Delivery</th>
+              <th>Total Volume</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    subregions.forEach(sub => {
+      if (!subregionMatrix[sub]) return;
+      const rowShares = subregionMatrix[sub];
+      const rowCounts = rawCountsMatrix[sub] || {};
+      const rowTotal = (rowCounts['In-Store'] || 0) + (rowCounts['Uber Eats'] || 0) + (rowCounts['DoorDash'] || 0) + (rowCounts['Self-Delivery'] || 0);
+
+      html += `<tr><td class="heatmap-row-header">${sub}</td>`;
+
+      channels.forEach(ch => {
+        const share = rowShares[ch] || 0;
+        const count = rowCounts[ch] || 0;
+        // Dynamic indigo-violet intensity
+        const alpha = Math.min(Math.max((share / 55), 0.12), 0.85);
+        const bg = isDark
+          ? `rgba(109, 125, 227, ${alpha})`
+          : `rgba(90, 106, 207, ${alpha})`;
+        const textCol = share > 35 ? (isDark ? '#FFFFFF' : '#FFFFFF') : (isDark ? '#F4F5FA' : '#14152B');
+
+        html += `
+          <td style="background:${bg}; color:${textCol};">
+            <span class="heatmap-cell-val">${share.toFixed(1)}%</span>
+            <span class="heatmap-cell-sub">${count.toLocaleString()} orders</span>
+          </td>
+        `;
+      });
+
+      html += `<td style="font-weight:700; color:var(--text-primary); background:var(--bg-page);">${rowTotal.toLocaleString()}</td></tr>`;
+    });
+
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  },
+
+  // 7. Side-by-Side Subregion Comparison Chart
   renderComparisonChart(canvasId, subA_name, subA_shares, subB_name, subB_shares) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);
@@ -396,7 +468,7 @@ window.DineCharts = {
     });
   },
 
-  // 7. Simulator Profit Comparison Bar
+  // 8. Simulator Profit Comparison Bar
   renderSimulatorComparison(canvasId, currentProfit, simulatedProfit, commSaved) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);

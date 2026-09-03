@@ -12,14 +12,11 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-try:
-    import streamlit as st
-    cache_decorator = st.cache_data(show_spinner="Loading and validating SkyCity restaurant data...")
-except Exception:
-    def cache_decorator(func):
-        return func
-
 import config
+
+_CACHED_RAW_DF = None
+_CACHED_REPORT = None
+_CACHED_MTIME = None
 
 def validate_data(df: pd.DataFrame) -> Dict[str, Any]:
     """
@@ -58,57 +55,65 @@ def validate_data(df: pd.DataFrame) -> Dict[str, Any]:
     aov_outliers = int(((df["AOV"] < config.AOV_MIN) | (df["AOV"] > config.AOV_MAX)).sum())
     gf_outliers = int(((df["GrowthFactor"] < config.GROWTH_FACTOR_MIN) | (df["GrowthFactor"] > config.GROWTH_FACTOR_MAX)).sum())
     comm_outliers = int(((df["CommissionRate"] < config.COMMISSION_RATE_MIN) | (df["CommissionRate"] > config.COMMISSION_RATE_MAX)).sum())
+    cogs_outliers = int(((df["COGSRate"] < config.COGS_RATE_MIN) | (df["COGSRate"] > config.COGS_RATE_MAX)).sum())
+    opex_outliers = int(((df["OPEXRate"] < config.OPEX_RATE_MIN) | (df["OPEXRate"] > config.OPEX_RATE_MAX)).sum())
     
-    passed_all = (
+    is_valid = (
         order_mismatches == 0
         and share_mismatches == 0
         and null_counts == 0
         and aov_outliers == 0
         and gf_outliers == 0
         and comm_outliers == 0
+        and cogs_outliers == 0
+        and opex_outliers == 0
     )
     
-    return {
-        "passed_all": passed_all,
+    report = {
+        "is_valid": is_valid,
         "total_rows": total_rows,
         "order_mismatches": order_mismatches,
         "share_mismatches": share_mismatches,
         "null_counts": null_counts,
         "aov_outliers": aov_outliers,
-        "gf_outliers": gf_outliers,
-        "comm_outliers": comm_outliers,
-        "subregions": sorted(df["Subregion"].dropna().unique().tolist()),
-        "cuisines": sorted(df["CuisineType"].dropna().unique().tolist()),
-        "segments": sorted(df["Segment"].dropna().unique().tolist()),
+        "growth_factor_outliers": gf_outliers,
+        "commission_rate_outliers": comm_outliers,
+        "cogs_outliers": cogs_outliers,
+        "opex_outliers": opex_outliers,
+        "total_orders_verified": int(df["MonthlyOrders"].sum()),
+        "total_gross_revenue_verified": float(
+            (
+                df[config.REVENUE_COLS["In-Store"]]
+                + df[config.REVENUE_COLS["Uber Eats"]]
+                + df[config.REVENUE_COLS["DoorDash"]]
+                + df[config.REVENUE_COLS["Self-Delivery"]]
+            ).sum()
+        ),
     }
+    
+    return report
 
-
-def _raw_load(csv_path: str = None) -> pd.DataFrame:
-    """Internal loader reading from disk safely without mutation."""
-    target_path = csv_path or config.PRIMARY_CSV_PATH
-    if not target_path or not target_path.exists():
-        if config.FALLBACK_CSV_PATH.exists():
-            target_path = config.FALLBACK_CSV_PATH
-        else:
-            raise FileNotFoundError(f"Data file not found at {target_path} or {config.FALLBACK_CSV_PATH}")
-            
+def load_data(filepath: Path = None) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """
+    Loads raw CSV data with automatic cache invalidation on file modification.
+    """
+    global _CACHED_RAW_DF, _CACHED_REPORT, _CACHED_MTIME
+    
+    target_path = Path(filepath) if filepath else (config.PRIMARY_CSV_PATH if config.PRIMARY_CSV_PATH.exists() else config.FALLBACK_CSV_PATH)
+    
+    if not target_path.exists():
+        raise FileNotFoundError(f"Data file not found at: {target_path}")
+    
+    current_mtime = target_path.stat().st_mtime
+    
+    if _CACHED_RAW_DF is not None and _CACHED_MTIME == current_mtime:
+        return _CACHED_RAW_DF.copy(), _CACHED_REPORT
+    
     df = pd.read_csv(target_path)
-    return df
-
-
-@cache_decorator
-def load_data(csv_path: str = None) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """
-    Cached data loading and validation function for Streamlit.
-    Returns the raw dataframe and the validation summary dictionary.
-    """
-    df = _raw_load(csv_path)
-    validation_report = validate_data(df)
-    return df, validation_report
-
-
-if __name__ == "__main__":
-    df, report = load_data()
-    print("Data Loader Validation Report:")
-    for k, v in report.items():
-        print(f"  {k}: {v}")
+    report = validate_data(df)
+    
+    _CACHED_RAW_DF = df
+    _CACHED_REPORT = report
+    _CACHED_MTIME = current_mtime
+    
+    return df.copy(), report

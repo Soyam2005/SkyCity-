@@ -13,13 +13,6 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-try:
-    import streamlit as st
-    cache_decorator = st.cache_data
-except Exception:
-    def cache_decorator(func):
-        return func
-
 import config
 
 def compute_diversification_score(shares: np.ndarray) -> np.ndarray:
@@ -34,7 +27,6 @@ def compute_diversification_score(shares: np.ndarray) -> np.ndarray:
     return np.clip(score, 0.0, 1.0)
 
 
-@cache_decorator
 def compute_kpis(df: pd.DataFrame) -> pd.DataFrame:
     """
     Formula: Enriches raw restaurant DataFrame with derived KPIs, shares, and risk classifications.

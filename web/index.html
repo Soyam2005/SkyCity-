@@ -32,8 +32,8 @@
           <span>Market Overview</span>
         </a>
         <a class="nav-item" data-tab="tab-distance">
-          <span class="nav-item-icon">📍</span>
-          <span>Distance & Radius</span>
+          <span class="nav-item-icon">🗺️</span>
+          <span>Subregions & Heatmap</span>
         </a>
         <a class="nav-item" data-tab="tab-cuisines">
           <span class="nav-item-icon">🍜</span>
@@ -52,10 +52,14 @@
           <span>Risk Assessment</span>
         </a>
 
-        <div class="nav-section-title">Optimization</div>
+        <div class="nav-section-title">Optimization & Deliverables</div>
         <a class="nav-item" data-tab="tab-simulator">
           <span class="nav-item-icon">🧮</span>
           <span>Profit Simulator</span>
+        </a>
+        <a class="nav-item" data-tab="tab-reports">
+          <span class="nav-item-icon">📑</span>
+          <span>Reports & Research</span>
         </a>
       </div>
 
@@ -90,6 +94,11 @@
           </span>
         </div>
         <div class="navbar-right">
+          <!-- Live CSV Reload Button -->
+          <button id="reloadBtn" class="btn-nav-action" title="Synchronize latest data from CSV">
+            🔄 Sync CSV
+          </button>
+          
           <!-- Dark Mode Toggle Button -->
           <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light/Dark Theme">🌙</button>
           
@@ -103,6 +112,20 @@
       <!-- Main Body Container -->
       <div class="content-body">
         
+        <!-- Channel Mode Toggle Bar (In-Store vs Delivery Requirement) -->
+        <div class="channel-toggle-container">
+          <div class="channel-toggle-label">
+            <span>⚡ Channel Focus Filter:</span>
+          </div>
+          <div class="segmented-control">
+            <button class="segment-btn active" data-mode="all">All Channels (100%)</button>
+            <button class="segment-btn" data-mode="in-store">In-Store Dining (Walk-in)</button>
+            <button class="segment-btn" data-mode="delivery">Delivery Only (UE+DD+SD)</button>
+            <button class="segment-btn" data-mode="aggregators">Aggregators Only (UE+DD)</button>
+            <button class="segment-btn" data-mode="direct">Direct Channels (In-Store+SD)</button>
+          </div>
+        </div>
+
         <!-- Signature Metric Hierarchy (1 Gradient Hero Card + 3 Flat Data Cards) -->
         <section class="metric-grid">
           <!-- 1. Gradient Hero Card -->
@@ -153,7 +176,7 @@
               <div class="card-header-bar">
                 <div>
                   <h3 class="card-title">Channel Market Share</h3>
-                  <p class="card-subtitle">Volume breakdown across 4 ordering channels</p>
+                  <p class="card-subtitle">Volume breakdown across active fulfillment channels</p>
                 </div>
               </div>
               <div style="height: 280px; position: relative;">
@@ -202,8 +225,20 @@
           </div>
         </section>
 
-        <!-- TAB 2: Distance & Radius Analysis -->
+        <!-- TAB 2: Subregion Heatmap & Distance Analysis -->
         <section id="tab-distance" class="tab-content">
+          <!-- 1. Subregion Channel Matrix Heatmap -->
+          <div class="surface-card" style="margin-bottom: 24px;">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">🗺️ Subregion-wise Channel Concentration Heatmap Matrix</h3>
+                <p class="card-subtitle">Geographic ordering density and channel reliance across Central, North, South, and West Auckland</p>
+              </div>
+            </div>
+            <div id="subregionHeatmapContainer"></div>
+          </div>
+
+          <!-- 2. Delivery Radius Scatter Chart with Zoom -->
           <div class="surface-card">
             <div class="card-header-bar">
               <div>
@@ -221,13 +256,13 @@
           </div>
         </section>
 
-        <!-- TAB 3: Cuisine Mix -->
+        <!-- TAB 3: Dynamic Cuisine Mix -->
         <section id="tab-cuisines" class="tab-content">
           <div class="surface-card">
             <div class="card-header-bar">
               <div>
-                <h3 class="card-title">🍜 Channel Share Across 8 Cuisine Types</h3>
-                <p class="card-subtitle">Stacked distribution across Burgers, Pizza, Thai, Japanese, etc.</p>
+                <h3 class="card-title">🍜 Channel Share Across Cuisine Types (Dynamic Filtered)</h3>
+                <p class="card-subtitle">Stacked distribution across Burgers, Pizza, Thai, Japanese, Chinese, Indian, etc.</p>
               </div>
             </div>
             <div style="height: 380px; position: relative;">
@@ -236,12 +271,12 @@
           </div>
         </section>
 
-        <!-- TAB 4: Segment Reliance -->
+        <!-- TAB 4: Dynamic Segment Reliance -->
         <section id="tab-segments" class="tab-content">
           <div class="surface-card">
             <div class="card-header-bar">
               <div>
-                <h3 class="card-title">🏢 Channel Reliance by Business Operational Segment</h3>
+                <h3 class="card-title">🏢 Channel Reliance by Business Operational Segment (Dynamic Filtered)</h3>
                 <p class="card-subtitle">Comparative channel split across Cafe, Full-service, Ghost Kitchen, and QSR</p>
               </div>
             </div>
@@ -439,6 +474,30 @@
 
             <div style="height: 260px; position: relative; margin-top: 16px;">
               <canvas id="simulatorChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 8: Reports & Deliverables Reader -->
+        <section id="tab-reports" class="tab-content">
+          <div class="report-viewer-card">
+            <div class="card-header-bar">
+              <div>
+                <h3 class="card-title">📑 Project Deliverables & Research Reports</h3>
+                <p class="card-subtitle">Comprehensive analytical papers and stakeholder executive summaries</p>
+              </div>
+              <button id="downloadReportBtn" class="btn-reset-zoom" style="background:var(--brand-indigo); color:#FFFFFF;">
+                ⬇️ Download Markdown (.md)
+              </button>
+            </div>
+
+            <div class="report-tabs-bar">
+              <button class="report-tab-btn active" data-report="research-paper">📄 Full Research Paper (EDA & Strategy)</button>
+              <button class="report-tab-btn" data-report="executive-summary">📋 Executive Summary (Stakeholders)</button>
+            </div>
+
+            <div id="reportMarkdownContent" class="report-content-body">
+              <p style="color:var(--text-muted);">Loading report content...</p>
             </div>
           </div>
         </section>

@@ -1,12 +1,14 @@
 /**
  * SkyCity DineMetrics — Main Web Application Controller
- * Supports Filters, Dark Mode Toggle, and Subregion Side-by-Side Comparison
+ * Features: Dynamic Multi-Filter Aggregations, Channel Toggle, Subregion Heatmap,
+ * Reports Viewer, Live CSV Data Sync, and Dark Mode.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const data = window.SKY_DATA;
+  let data = window.SKY_DATA;
   if (!data) {
-    console.error('Data file not loaded');
+    console.warn('window.SKY_DATA not found, attempting live fetch from /api/data');
+    fetchLiveApiData();
     return;
   }
 
@@ -15,10 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     subregion: 'All',
     cuisine: 'All',
     segment: 'All',
+    channelMode: 'all', // 'all', 'in-store', 'delivery', 'aggregators', 'direct'
     activeTab: 'tab-overview',
     theme: localStorage.getItem('sky_theme') || 'light',
     compA: 'CBD',
-    compB: 'South Auckland'
+    compB: 'South Auckland',
+    activeReport: 'research-paper'
   };
 
   // 1. Theme Switcher (Dark / Light Mode)
@@ -32,13 +36,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.setAttribute('data-theme', state.theme);
         localStorage.setItem('sky_theme', state.theme);
         themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
-        // Re-render active charts with updated theme colors
-        renderActiveTabCharts(state.activeTab);
+        updateApp();
       });
     }
   }
 
-  // 2. Populate Select Options
+  // 2. Channel Toggle Segmented Bar
+  function initChannelToggle() {
+    const btns = document.querySelectorAll('.segment-btn[data-mode]');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        btns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.channelMode = btn.getAttribute('data-mode');
+        updateApp();
+      });
+    });
+  }
+
+  // 3. Populate Select Options
   function initFilters() {
     const subregions = ['All', 'CBD', 'North Shore', 'South Auckland', 'West Auckland'];
     const cuisines = ['All', 'Burgers', 'Chicken Dishes', 'Chinese', 'Indian', 'Japanese', 'Kebabs/Mediterranean', 'Pizza', 'Thai'];
@@ -70,9 +86,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (subSelect) subSelect.addEventListener('change', (e) => { state.subregion = e.target.value; updateApp(); });
     if (cuiSelect) cuiSelect.addEventListener('change', (e) => { state.cuisine = e.target.value; updateApp(); });
     if (segSelect) segSelect.addEventListener('change', (e) => { state.segment = e.target.value; updateApp(); });
+
+    // Live Reload button
+    const reloadBtn = document.getElementById('reloadBtn');
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', async () => {
+        reloadBtn.textContent = '🔄 Syncing...';
+        await fetchLiveApiData();
+        reloadBtn.textContent = '🔄 Sync CSV';
+      });
+    }
   }
 
-  // Filter Data
+  // 4. Live API Data Fetch
+  async function fetchLiveApiData() {
+    try {
+      const res = await fetch('/api/data');
+      if (res.ok) {
+        data = await res.json();
+        window.SKY_DATA = data;
+        updateApp();
+        console.log('Successfully fetched live data from /api/data');
+      }
+    } catch (err) {
+      console.warn('API fetch skipped or failed, using local window.SKY_DATA:', err);
+    }
+  }
+
+  // 5. Filter Data by Global Filters & Channel Mode
   function getFilteredRestaurants() {
     return (data.restaurants || []).filter(r => {
       const matchSub = state.subregion === 'All' || r.Subregion === state.subregion;
@@ -82,7 +123,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Compute Aggregations
+  // 6. Dynamic Matrix Calculations from Filtered Subset
+  function computeDynamicDimensionMatrix(restaurants, dimKey) {
+    const counts = {};
+    const channels = ['In-Store', 'Uber Eats', 'DoorDash', 'Self-Delivery'];
+    const channelKeys = {
+      'In-Store': 'InStoreOrders',
+      'Uber Eats': 'UberEatsOrders',
+      'DoorDash': 'DoorDashOrders',
+      'Self-Delivery': 'SelfDeliveryOrders'
+    };
+
+    restaurants.forEach(r => {
+      const val = r[dimKey];
+      if (!val) return;
+      if (!counts[val]) {
+        counts[val] = { 'In-Store': 0, 'Uber Eats': 0, 'DoorDash': 0, 'Self-Delivery': 0, total: 0 };
+      }
+      channels.forEach(ch => {
+        const c = r[channelKeys[ch]] || 0;
+        counts[val][ch] += c;
+        counts[val].total += c;
+      });
+    });
+
+    const shares = {};
+    Object.keys(counts).forEach(k => {
+      shares[k] = {};
+      const tot = counts[k].total || 1;
+      channels.forEach(ch => {
+        shares[k][ch] = (counts[k][ch] / tot) * 100.0;
+      });
+    });
+
+    return { shares, counts };
+  }
+
+  // 7. Compute Aggregations (Honoring Channel Mode)
   function computeMetrics(restaurants) {
     let totalOrders = 0;
     let totalRev = 0;
@@ -97,9 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     restaurants.forEach(r => {
-      totalOrders += r.MonthlyOrders || 0;
-      totalRev += r.TotalRevenue || 0;
-      totalProfit += r.TotalNetProfit || 0;
       if (r.RiskFlag) highRiskCount++;
 
       channelTotals['In-Store'].Orders += r.InStoreOrders || 0;
@@ -119,7 +193,25 @@ document.addEventListener('DOMContentLoaded', () => {
       channelTotals['Self-Delivery'].NetProfit += r.SelfDeliveryNetProfit || 0;
     });
 
-    const channels = Object.keys(channelTotals).map(ch => {
+    // Apply Channel Mode filter
+    let activeChannels = ['In-Store', 'Uber Eats', 'DoorDash', 'Self-Delivery'];
+    if (state.channelMode === 'in-store') {
+      activeChannels = ['In-Store'];
+    } else if (state.channelMode === 'delivery') {
+      activeChannels = ['Uber Eats', 'DoorDash', 'Self-Delivery'];
+    } else if (state.channelMode === 'aggregators') {
+      activeChannels = ['Uber Eats', 'DoorDash'];
+    } else if (state.channelMode === 'direct') {
+      activeChannels = ['In-Store', 'Self-Delivery'];
+    }
+
+    activeChannels.forEach(ch => {
+      totalOrders += channelTotals[ch].Orders;
+      totalRev += channelTotals[ch].Revenue;
+      totalProfit += channelTotals[ch].NetProfit;
+    });
+
+    const channels = activeChannels.map(ch => {
       const o = channelTotals[ch].Orders;
       const rev = channelTotals[ch].Revenue;
       const prof = channelTotals[ch].NetProfit;
@@ -146,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Update UI Elements
+  // 8. Update UI Elements
   function updateApp() {
     const restaurants = getFilteredRestaurants();
     const metrics = computeMetrics(restaurants);
@@ -164,15 +256,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const riskBadge = document.getElementById('metricRiskBadge');
 
     if (heroProfit) heroProfit.textContent = '$' + Math.round(metrics.totalProfit).toLocaleString();
-    if (heroMargin) heroMargin.textContent = `${metrics.margin.toFixed(1)}% Avg Profit Margin Across Network`;
+    if (heroMargin) heroMargin.textContent = `${metrics.margin.toFixed(1)}% Avg Margin (${state.channelMode.toUpperCase()})`;
     if (flatOrders) flatOrders.textContent = metrics.totalOrders.toLocaleString();
     if (flatRev) flatRev.textContent = '$' + Math.round(metrics.totalRev).toLocaleString();
     if (flatRisk) flatRisk.textContent = metrics.highRiskCount.toLocaleString();
     if (riskBadge) riskBadge.textContent = `${metrics.highRiskPct.toFixed(1)}% Ratio`;
 
-    // 2. Render Tables
+    // 2. Render Tables & Heatmap
     renderChannelsTable(metrics.channels);
     renderRiskTable(restaurants.filter(r => r.RiskFlag));
+
+    // Subregion Heatmap Matrix
+    const subMatrixData = computeDynamicDimensionMatrix(restaurants, 'Subregion');
+    window.DineCharts.renderSubregionHeatmapTable('subregionHeatmapContainer', subMatrixData.shares, subMatrixData.counts);
 
     // 3. Render Active Tab Visualizations
     renderActiveTabCharts(state.activeTab, metrics, restaurants);
@@ -188,17 +284,24 @@ document.addEventListener('DOMContentLoaded', () => {
       metrics = computeMetrics(restaurants);
     }
 
+    const dynCuisines = computeDynamicDimensionMatrix(restaurants, 'CuisineType');
+    const dynSegments = computeDynamicDimensionMatrix(restaurants, 'Segment');
+
     if (tabId === 'tab-overview') {
       window.DineCharts.renderDonut('channelDonutChart', metrics.channels);
       window.DineCharts.renderEconomicsBar('economicsBarChart', metrics.channels);
     } else if (tabId === 'tab-distance') {
       window.DineCharts.renderRadiusScatter('radiusScatterChart', restaurants);
-    } else if (tabId === 'tab-cuisines' && data.cuisines) {
-      window.DineCharts.renderCuisineMix('cuisineMixChart', data.cuisines);
-    } else if (tabId === 'tab-segments' && data.segments) {
-      window.DineCharts.renderSegmentBar('segmentBarChart', data.segments);
+      const subMatrixData = computeDynamicDimensionMatrix(restaurants, 'Subregion');
+      window.DineCharts.renderSubregionHeatmapTable('subregionHeatmapContainer', subMatrixData.shares, subMatrixData.counts);
+    } else if (tabId === 'tab-cuisines') {
+      window.DineCharts.renderCuisineMix('cuisineMixChart', dynCuisines.shares);
+    } else if (tabId === 'tab-segments') {
+      window.DineCharts.renderSegmentBar('segmentBarChart', dynSegments.shares);
     } else if (tabId === 'tab-comparison') {
       updateComparisonView();
+    } else if (tabId === 'tab-reports') {
+      loadReport(state.activeReport);
     } else if (tabId === 'tab-simulator') {
       updateSimulator(restaurants);
     }
@@ -241,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  // 3. Side-by-Side Subregion Comparison Logic
+  // 9. Side-by-Side Subregion Comparison Logic
   function updateComparisonView() {
     const all = data.restaurants || [];
     const listA = all.filter(r => r.Subregion === state.compA);
@@ -281,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.DineCharts.renderComparisonChart('comparisonChart', state.compA, sharesA, state.compB, sharesB);
   }
 
+  // 10. Simulator Updates
   function updateSimulator(restaurants) {
     const ueSlider = document.getElementById('ueSlider');
     const ddSlider = document.getElementById('ddSlider');
@@ -317,6 +421,67 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   }
 
+  // 11. Reports Reader Loader
+  async function loadReport(reportType) {
+    const container = document.getElementById('reportMarkdownContent');
+    if (!container) return;
+
+    const url = reportType === 'executive-summary'
+      ? '/api/reports/executive-summary'
+      : '/api/reports/research-paper';
+
+    container.innerHTML = '<p style="color:var(--text-muted);">Loading report content...</p>';
+
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const md = await res.text();
+        // Convert basic markdown to clean HTML
+        container.innerHTML = parseMarkdownToHtml(md);
+      } else {
+        container.innerHTML = '<p>Report file could not be loaded via API.</p>';
+      }
+    } catch (err) {
+      container.innerHTML = '<p>Could not connect to report API server.</p>';
+    }
+  }
+
+  function parseMarkdownToHtml(md) {
+    let html = md
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/\| (.*) \|/gim, (match) => {
+        const cells = match.split('|').filter(c => c.trim() !== '');
+        return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+      })
+      .replace(/\n\n/gim, '<br><br>');
+    return html;
+  }
+
+  function initReportTabs() {
+    const reportBtns = document.querySelectorAll('.report-tab-btn[data-report]');
+    reportBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        reportBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.activeReport = btn.getAttribute('data-report');
+        loadReport(state.activeReport);
+      });
+    });
+
+    const downloadBtn = document.getElementById('downloadReportBtn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        const fileName = state.activeReport === 'executive-summary' ? 'executive_summary.md' : 'research_paper.md';
+        window.open(`/api/reports/${state.activeReport}`, '_blank');
+      });
+    }
+  }
+
   // Setup Tab Navigation
   function initTabs() {
     const navItems = document.querySelectorAll('.nav-item[data-tab]');
@@ -351,10 +516,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (destSelect) destSelect.addEventListener('change', () => updateSimulator(getFilteredRestaurants()));
   }
 
-  // Initialize
+  // Initialize All
   initTheme();
+  initChannelToggle();
   initFilters();
   initTabs();
+  initReportTabs();
   initSimulatorControls();
   updateApp();
 });
