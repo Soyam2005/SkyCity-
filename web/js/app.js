@@ -426,23 +426,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('reportMarkdownContent');
     if (!container) return;
 
-    const url = reportType === 'executive-summary'
+    const fileName = reportType === 'executive-summary'
+      ? 'executive_summary.md'
+      : 'research_paper.md';
+    const apiUrl = reportType === 'executive-summary'
       ? '/api/reports/executive-summary'
       : '/api/reports/research-paper';
 
     container.innerHTML = '<p style="color:var(--text-muted);">Loading report content...</p>';
 
     try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const md = await res.text();
-        // Convert basic markdown to clean HTML
-        container.innerHTML = parseMarkdownToHtml(md);
-      } else {
-        container.innerHTML = '<p>Report file could not be loaded via API.</p>';
-      }
+      // app.py exposes the API route. The second location supports static
+      // development servers launched from the project root.
+      let res = await fetch(apiUrl);
+      if (!res.ok) res = await fetch(`../reports/${fileName}`);
+
+      if (!res.ok) throw new Error(`Report request failed (${res.status})`);
+
+      const md = await res.text();
+      // Convert basic markdown to clean HTML
+      container.innerHTML = parseMarkdownToHtml(md);
     } catch (err) {
-      container.innerHTML = '<p>Could not connect to report API server.</p>';
+      container.innerHTML = '<p>Report file could not be loaded. Start the dashboard with <code>python app.py</code>, or serve the project root so <code>reports/' + fileName + '</code> is available.</p>';
     }
   }
 
