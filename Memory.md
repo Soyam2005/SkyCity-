@@ -73,3 +73,7 @@
 ## 2026-09-03 — Navigation Simplification
 - **Done:** Removed the Reports & Research item from the dashboard sidebar.
 - **Decisions:** The report view remains in the codebase but is no longer exposed through primary navigation.
+
+## 2026-09-03 — Report Section Removal
+- **Done:** Removed the reports reader from the dashboard page and disabled its frontend initialization.
+- **Decisions:** The Markdown source files remain in `reports/` as project documentation, but no report section is delivered in the dashboard interface.

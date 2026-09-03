@@ -21,8 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activeTab: 'tab-overview',
     theme: localStorage.getItem('sky_theme') || 'light',
     compA: 'CBD',
-    compB: 'South Auckland',
-    activeReport: 'research-paper'
+    compB: 'South Auckland'
   };
 
   // 1. Theme Switcher (Dark / Light Mode)
@@ -300,8 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.DineCharts.renderSegmentBar('segmentBarChart', dynSegments.shares);
     } else if (tabId === 'tab-comparison') {
       updateComparisonView();
-    } else if (tabId === 'tab-reports') {
-      loadReport(state.activeReport);
     } else if (tabId === 'tab-simulator') {
       updateSimulator(restaurants);
     }
@@ -541,7 +538,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initChannelToggle();
   initFilters();
   initTabs();
-  initReportTabs();
   initSimulatorControls();
   updateApp();
 });
