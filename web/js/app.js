@@ -436,18 +436,33 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = '<p style="color:var(--text-muted);">Loading report content...</p>';
 
     try {
-      // app.py exposes the API route. The second location supports static
-      // development servers launched from the project root.
-      let res = await fetch(apiUrl);
-      if (!res.ok) res = await fetch(`../reports/${fileName}`);
+      // app.py exposes the API route. The remaining locations support static
+      // servers and the GitHub Pages deployment, where reports/ is outside web/.
+      const reportUrls = [
+        apiUrl,
+        `../reports/${fileName}`,
+        `https://raw.githubusercontent.com/Soyam2005/SkyCity-/main/reports/${fileName}`
+      ];
+      let res;
+      for (const url of reportUrls) {
+        try {
+          const candidate = await fetch(url);
+          if (candidate.ok) {
+            res = candidate;
+            break;
+          }
+        } catch (_) {
+          // Try the next supported report location.
+        }
+      }
 
-      if (!res.ok) throw new Error(`Report request failed (${res.status})`);
+      if (!res) throw new Error('Report request failed');
 
       const md = await res.text();
       // Convert basic markdown to clean HTML
       container.innerHTML = parseMarkdownToHtml(md);
     } catch (err) {
-      container.innerHTML = '<p>Report file could not be loaded. Start the dashboard with <code>python app.py</code>, or serve the project root so <code>reports/' + fileName + '</code> is available.</p>';
+      container.innerHTML = '<p>Report file could not be loaded. Please refresh the page and try again.</p>';
     }
   }
 
