@@ -18,6 +18,22 @@ It will automatically start the server on port 8000 and open **`http://localhost
 
 *(Alternatively, you can also run `python -m http.server 8000 --directory web` or double-click `web/index.html`)*
 
+### Deploy to Vercel
+
+This dashboard is a static site. The included `vercel.json` publishes the `web/`
+folder, so no build command or environment variables are needed.
+
+1. Push this repository to GitHub.
+2. In Vercel, select **Add New → Project** and import the repository.
+3. Leave the framework preset as **Other** and deploy. Vercel will use
+   `web/` as the output directory automatically.
+
+Or, after logging in to the Vercel CLI, deploy from the repository root:
+
+```powershell
+npx vercel --prod
+```
+
 ---
 
 ## 📁 Repository Structure
